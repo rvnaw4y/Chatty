@@ -1,90 +1,216 @@
 import express from "express";
 import "dotenv/config";
 import OpenAI from "openai";
-import electron from "electron";
-const { app: electronApp, BrowserWindow } = electron;
+import sqlite3pkg from "sqlite3";
+import bcrypt from "bcrypt";
 
+const sqlite3 = sqlite3pkg.verbose();
 const serverApp = express();
+
+serverApp.use(express.urlencoded({ extended: true }));
 serverApp.use(express.json());
+
 serverApp.use(express.static("public"));
 
+import path from "path";
+import { fileURLToPath } from "url";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+serverApp.get("/:page", (req, res, next) => {
+    let page = req.params.page;
+    let filePath = path.join(__dirname, "public", `${page}.html`);
+
+    res.sendFile(filePath, err => {
+        if (err) next();
+    });
+});
+
+serverApp.get("/", (req, res ) => {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+})
+
+// ----------------------
+// DATABASE
+// ----------------------
+const db = new sqlite3.Database("./users.db", (err) => {
+    if (err) console.log(err);
+    console.log("Connected to SQLite DB");
+});
+
+db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE,
+        password TEXT
+    )
+`);
+
+// ----------------------
+// SIGNUP ROUTE
+// ----------------------
+serverApp.post("/signup", async (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.send("Missing username or password");
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
+
+    db.run(
+        `INSERT INTO users (username, password) VALUES (?, ?)`,
+        [username, hashed],
+        function (err) {
+            if (err) {
+                return res.send("Username already taken");
+            }
+            res.send("Signup successful! <a href='/login.html'>Login</a>");
+        }
+    );
+});
+
+// ----------------------
+// LOGIN ROUTE
+// ----------------------
+serverApp.post("/login", (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.send("Missing username or password");
+    }
+
+    db.get(
+        `SELECT * FROM users WHERE username = ?`,
+        [username],
+        async (err, row) => {
+            if (!row) return res.send("User not found");
+
+            const match = await bcrypt.compare(password, row.password);
+            if (!match) return res.send("Invalid password");
+
+            res.redirect("/chat.html");
+    
+        }
+    );
+});
+
+// ----------------------
+// OPENAI / CHAT ROUTES
+// ----------------------
 const openai = new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.CHATBOTTOKEN,
-  defaultHeaders: {
-    "HTTP-Referer": process.env.YOUR_SITE_URL || "http://localhost:3000",
-    "X-Title": process.env.YOUR_SITE_NAME || "Femboy AI",
-  },
+    baseURL: "https://openrouter.ai/api/v1",
+    apiKey: process.env.CHATBOTTOKEN,
+    defaultHeaders: {
+        "HTTP-Referer": process.env.YOUR_SITE_URL || "http://localhost:3000",
+        "X-Title": process.env.YOUR_SITE_NAME || "Chatty"
+    }
 });
 
-let deepseekmodel = [{
-    role: "system",
-    content:
-    "Maintain a normal stability with the user and help all the way." 
-}]
-let conversationModel1 = [
-  {
-    role: "system",
-    content: "[INFO: Name: Bobby Personality: Helpful and Friendly]You help people and you are a friendly bot.",
-  },
-];
+// ----------------------
+// NEW: No system prompts, user-only chat
+// ----------------------
 
-// Deepseek
+// memory storage per model (optional)
+let chatMemory = {
+    deepseek: [],
+    grok: [],
+    model1: []
+};
+
+// ----------------------
+// Deepseek route
+// ----------------------
 serverApp.post("/api/chat/deepseek", async (req, res) => {
-  const { message, reset } = req.body;
+    const { message, reset } = req.body;
 
-  try {
-    if (reset) {
-      deepseekmodel = [deepseekmodel[0]];
-      return res.json({ reply: "Memory cleared!" });
+    try {
+        if (reset) {
+            chatMemory.deepseek = [];
+            return res.json({ reply: "Memory cleared!" });
+        }
+
+        chatMemory.deepseek.push({ role: "user", content: message });
+
+        const completion = await openai.chat.completions.create({
+            model: "tngtech/deepseek-r1t2-chimera:free",
+            messages: chatMemory.deepseek
+        });
+
+        const reply = completion.choices[0].message.content;
+        chatMemory.deepseek.push({ role: "assistant", content: reply });
+
+        res.json({ reply });
+    } catch (err) {
+        console.error("API Error:", err);
+        res.status(500).json({ reply: "Error contacting AI :(" });
     }
-
-    deepseekmodel.push({ role: "user", content: message });
-
-    const completion = await openai.chat.completions.create({
-      model: "nvidia/nemotron-nano-9b-v2:free",
-      messages: deepseekmodel,
-    });
-
-    const reply = completion.choices[0].message.content;
-    deepseekmodel.push({ role: "assistant", content: reply });
-
-    res.json({ reply });
-  } catch (err) {
-    console.error("Error from API:", err);
-    res.status(500).json({ reply: "Error contacting AI :(" });
-  }
 });
-// --- Model1 route ---
+
+// ----------------------
+// Grok route
+// ----------------------
+serverApp.post("/api/chat/grok", async (req, res) => {
+    const { message, reset } = req.body;
+
+    try {
+        if (reset) {
+            chatMemory.grok = [];
+            return res.json({ reply: "Memory cleared!" });
+        }
+
+        chatMemory.grok.push({ role: "user", content: message });
+
+        const completion = await openai.chat.completions.create({
+            model: "x-ai/grok-4.1-fast:free",
+            messages: chatMemory.grok
+        });
+
+        const reply = completion.choices[0].message.content;
+        chatMemory.grok.push({ role: "assistant", content: reply });
+
+        res.json({ reply });
+    } catch (err) {
+        console.error("API Error:", err);
+        res.status(500).json({ reply: "Error contacting AI :(" });
+    }
+});
+
+// ----------------------
+// Model1 route
+// ----------------------
 serverApp.post("/api/chat/model1", async (req, res) => {
-  const { message, reset } = req.body;
+    const { message, reset } = req.body;
 
-  try {
-    if (reset) {
-      conversationModel1 = [conversationModel1[0]];
-      return res.json({ reply: "Memory cleared!" });
+    try {
+        if (reset) {
+            chatMemory.model1 = [];
+            return res.json({ reply: "Memory cleared!" });
+        }
+
+        chatMemory.model1.push({ role: "user", content: message });
+
+        const completion = await openai.chat.completions.create({
+            model: "nvidia/nemotron-nano-12b-v2-vl:free",
+            messages: chatMemory.model1
+        });
+
+        const reply = completion.choices[0].message.content;
+        chatMemory.model1.push({ role: "assistant", content: reply });
+
+        res.json({ reply });
+    } catch (err) {
+        console.error("API Error:", err);
+        res.status(500).json({ reply: "Error contacting AI :(" });
     }
-
-    conversationModel1.push({ role: "user", content: message });
-
-    const completion = await openai.chat.completions.create({
-      model: "nvidia/nemotron-nano-9b-v2:free",
-      messages: conversationModel1,
-    });
-
-    const reply = completion.choices[0].message.content;
-    conversationModel1.push({ role: "assistant", content: reply });
-
-    res.json({ reply });
-  } catch (err) {
-    console.error("Error from API:", err);
-    res.status(500).json({ reply: "Error contacting AI :(" });
-  }
 });
 
-// --- Start server and Electron ---
+
+// ----------------------
+// SERVER START
+// ----------------------
 const PORT = process.env.PORT || 3000;
 serverApp.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+    console.log(`🚀 Server running at http://localhost:${PORT}`);
 });

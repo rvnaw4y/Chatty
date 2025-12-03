@@ -5,474 +5,147 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chatty</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: #212327;
-      color: #e3e3e3;
-      height: 100vh;
-      overflow: hidden;
+      margin: 0;
+      font-family: "Inter", sans-serif;
+      background: #1b1d21;
+      color: white;
+      overflow-x: hidden;
     }
 
-    .container {
-      display: flex;
-      height: 100vh;
-    }
-
-    /* Sidebar */
-    .sidebar {
-      width: 260px;
-      background: #18181b;
-      border-right: 1px solid #2a2a2e;
-      display: flex;
-      flex-direction: column;
-      padding: 16px 12px;
-    }
-
-    .sidebar-header {
+    /* Full Navbar */
+    .navbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
-      padding: 0 8px;
+      padding: 20px 100px;
+      background: #111;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
     }
-
-    .sidebar-header h2 {
+    .navbar .logo {
+      font-size: 24px;
+      font-weight: bold;
+      color: white;
+      text-decoration: none;
+    }
+    .navbar .nav-links {
+      display: flex;
+      gap: 25px;
+    }
+    .navbar .nav-links a {
+      color: #ccc;
+      text-decoration: none;
+      transition: 0.2s;
       font-size: 16px;
-      font-weight: 600;
-      color: #e3e3e3;
+    }
+    .navbar .nav-links a:hover {
+      color: white;
     }
 
-    .new-chat-btn {
-      background: transparent;
-      border: 1px solid #3a3a3e;
-      color: #e3e3e3;
-      padding: 8px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
-      transition: all 0.2s ease;
-    }
-
-    .new-chat-btn:hover {
-      background: #2a2a2e;
-      border-color: #4a4a4e;
-    }
-
-    .model-selector {
-      margin-bottom: 16px;
-    }
-
-    #modelSelect {
-      width: 100%;
-      padding: 10px 12px;
-      background: #2a2a2e;
-      border: 1px solid #3a3a3e;
-      border-radius: 6px;
-      color: #e3e3e3;
-      font-size: 13px;
-      cursor: pointer;
-      outline: none;
-      transition: all 0.2s ease;
-    }
-
-    #modelSelect:hover {
-      border-color: #4a4a4e;
-    }
-
-    #modelSelect option {
-      background: #2a2a2e;
-      color: #e3e3e3;
-    }
-
-    .chat-history {
-      flex: 1;
-      overflow-y: auto;
-    }
-
-    .chat-history::-webkit-scrollbar {
-      width: 4px;
-    }
-
-    .chat-history::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .chat-history::-webkit-scrollbar-thumb {
-      background: #3a3a3e;
-      border-radius: 4px;
-    }
-
-    .sidebar-footer {
-      padding-top: 12px;
-      border-top: 1px solid #2a2a2e;
-    }
-
-    #resetBtn {
-      width: 100%;
-      padding: 10px 12px;
-      background: transparent;
-      border: 1px solid #3a3a3e;
-      border-radius: 6px;
-      color: #e3e3e3;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    #resetBtn:hover {
-      background: #2a2a2e;
-      border-color: #4a4a4e;
-    }
-
-    /* Main Chat Area */
-    .main-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      background: #212327;
-    }
-
-    .chat-header {
-      padding: 16px 24px;
-      border-bottom: 1px solid #2a2a2e;
+    /* Hero Section */
+    .hero {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      padding: 130px 100px;
+      flex-wrap: wrap;
     }
 
-    .chat-title {
-      font-size: 15px;
-      font-weight: 500;
-      color: #e3e3e3;
+    .hero-text {
+      max-width: 500px;
+      margin-top: 80px;
+    }
+    .hero-text h1 {
+      font-size: 48px;
+      margin: 0;
+    }
+    .hero-text p {
+      font-size: 28px;
+      margin: 10px 0 30px;
+      color: #d4d4d4;
+    }
+    .hero-text small {
+      font-size: 13px;
+      color: #b8b8b8;
     }
 
-    #chat-box {
-      flex: 1;
-      overflow-y: auto;
-      padding: 32px 24px;
+    /* Laptop Image */
+    .laptop {
       display: flex;
       flex-direction: column;
-      gap: 24px;
-    }
-
-    #chat-box::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    #chat-box::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    #chat-box::-webkit-scrollbar-thumb {
-      background: #3a3a3e;
-      border-radius: 4px;
-    }
-
-    .message {
-      display: flex;
-      gap: 12px;
-      max-width: 800px;
-      animation: fadeIn 0.3s ease;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(8px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .message.user {
-      align-self: flex-end;
-      flex-direction: row-reverse;
-    }
-
-    .message.ai {
-      align-self: flex-start;
-    }
-
-    .message-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      flex-shrink: 0;
     }
-
-    .message.user .message-avatar {
-      background: #4a9eff;
-      color: white;
+    .laptop img {
+      width: 600px;
+      max-width: 100%;
+      display: block;
+      margin-bottom: 20px;
     }
-
-    .message.ai .message-avatar {
-      background: #2a2a2e;
+    .laptop .caption {
+      font-size: 26px;
       color: #e3e3e3;
+      text-align: center;
     }
 
-    .message-content {
-      background: #2a2a2e;
-      padding: 12px 16px;
-      border-radius: 8px;
-      color: #e3e3e3;
-      line-height: 1.6;
-      font-size: 14px;
-      word-wrap: break-word;
-    }
-
-    .message.user .message-content {
-      background: #4a9eff;
-      color: white;
-    }
-
-    /* Input Area */
-    .input-container {
-      padding: 20px 24px;
-      border-top: 1px solid #2a2a2e;
-      background: #18181b;
-    }
-
-    .input-wrapper {
-      max-width: 800px;
-      margin: 0 auto;
-      display: flex;
-      gap: 12px;
-      align-items: flex-end;
-    }
-
-    #messageBox {
-      flex: 1;
-      padding: 12px 16px;
-      background: #2a2a2e;
-      border: 1px solid #3a3a3e;
-      border-radius: 8px;
-      color: #e3e3e3;
-      font-size: 14px;
-      font-family: inherit;
-      resize: none;
-      outline: none;
-      transition: all 0.2s ease;
-      min-height: 44px;
-      max-height: 200px;
-    }
-
-    #messageBox::placeholder {
-      color: #666;
-    }
-
-    #messageBox:focus {
-      border-color: #4a9eff;
-      background: #2d2d31;
-    }
-
-    #sendBtn {
-      padding: 12px 24px;
-      background: #4a9eff;
-      color: white;
+    /* Button Example */
+    .hero-text button {
+      padding: 12px 25px;
+      background-color: #4caf50;
       border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
+      border-radius: 6px;
+      color: white;
+      font-size: 16px;
       cursor: pointer;
-      transition: all 0.2s ease;
-      white-space: nowrap;
+      margin-top: 20px;
+      transition: 0.2s;
+    }
+    .hero-text button:hover {
+      background-color: #45a049;
     }
 
-    #sendBtn:hover {
-      background: #3a8eef;
-    }
-
-    #sendBtn:active {
-      transform: scale(0.98);
-    }
-
-    .footer-note {
-      text-align: center;
-      padding: 12px 24px;
-      font-size: 12px;
-      color: #666;
-      background: #18181b;
-    }
-
-    /* Empty State */
-    .empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      color: #666;
-      text-align: center;
-      padding: 24px;
-    }
-
-    .empty-state h3 {
-      font-size: 20px;
-      margin-bottom: 8px;
-      color: #e3e3e3;
-    }
-
-    .empty-state p {
-      font-size: 14px;
-    }
-
-    @media (max-width: 768px) {
-      .sidebar {
-        display: none;
+    @media (max-width: 900px) {
+      .hero {
+        flex-direction: column;
+        text-align: center;
+        padding: 100px 20px;
       }
-
-      #chat-box {
-        padding: 20px 16px;
+      .hero-text {
+        margin-top: 0;
       }
-
-      .input-container {
-        padding: 16px;
-      }
-
-      .message {
-        max-width: 100%;
+      .laptop .caption {
+        margin-top: 10px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <div class="sidebar-header">
-        <h2>Chatty</h2>
-      </div>
-      
-      <div class="model-selector">
-        <select id="modelSelect">
-          <option value="model1">Bobby (My helpful AI)</option>
-          <option value="deepseek">deepseek (The best there is)</option>
-        </select>
-        <button id="modelSelect">More features soon!</button>
-      </div>
 
-      <div class="chat-history">
-        <!-- Chat history would go here -->
-      </div>
-
-      <div class="sidebar-footer">
-        <button id="resetBtn">Reset Memory</button>
-      </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="main-content">
-      <div class="chat-header">
-        <div class="chat-title">New Chat</div>
-      </div>
-
-      <div id="chat-box">
-        <div class="empty-state">
-          <h3>How can I help you today?</h3>
-          <p>Start a conversation by typing a message below</p>
-        </div>
-      </div>
-
-      <div class="input-container">
-        <div class="input-wrapper">
-          <textarea id="messageBox" placeholder="Message..." rows="1"></textarea>
-          <button id="sendBtn">Send</button>
-        </div>
-      </div>
-
-      <div class="footer-note">
-        Note: This app is using an <a href="https://openrouter.ai/">openrouter</a> ai i just gave them a prompt on how to act and what their job is.
-      </div>
+  <!-- Full Navbar -->
+  <div class="navbar">
+    <a href="#" class="logo">Chatty</a>
+    <div class="nav-links">
+      <a href="#">Home</a>
+      <a href="login">LogIn</a>
+      <a href="signup">SignUp</a>
     </div>
   </div>
 
-  <script>
-    const chatBox = document.getElementById("chat-box");
-    const messageBox = document.getElementById("messageBox");
-    const modelSelect = document.getElementById("modelSelect");
-    const sendBtn = document.getElementById("sendBtn");
-    const resetBtn = document.getElementById("resetBtn");
-    const emptyState = document.querySelector(".empty-state");
+  <!-- Main Hero Section -->
+  <section class="hero">
+    <div class="hero-text">
+      <h1>Chatty</h1>
+      <p>Your free Multi AI Tool.</p>
+      <small>Chatty was made to talk with AI models for free and forever! It is based on the OpenRouter API.</small>
+      <button>Get Started</button>
+    </div>
 
-    // Auto-resize textarea
-    messageBox.addEventListener('input', function() {
-      this.style.height = 'auto';
-      this.style.height = Math.min(this.scrollHeight, 200) + 'px';
-    });
+    <div class="laptop">
+      <img src="img/Untitled design.png" alt="Laptop preview">
+      <div class="caption">By developers for developers!</div>
+    </div>
+  </section>
 
-    function addMessage(content, sender) {
-      if (emptyState) {
-        emptyState.remove();
-      }
-
-      const messageDiv = document.createElement("div");
-      messageDiv.classList.add("message", sender);
-
-      const avatar = document.createElement("div");
-      avatar.classList.add("message-avatar");
-      avatar.textContent = sender === "user" ? "U" : "AI";
-
-      const messageContent = document.createElement("div");
-      messageContent.classList.add("message-content");
-      messageContent.textContent = content;
-
-      messageDiv.appendChild(avatar);
-      messageDiv.appendChild(messageContent);
-
-      chatBox.appendChild(messageDiv);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    async function sendMessage(reset = false) {
-      const message = messageBox.value.trim();
-      const model = modelSelect.value;
-      if (!message && !reset) return;
-
-      if (!reset) addMessage(message, "user");
-      messageBox.value = "";
-      messageBox.style.height = 'auto';
-
-      addMessage(reset ? "🔄 Resetting memory..." : "🤖 Thinking...", "ai");
-
-      try {
-        const response = await fetch(`/api/chat/${model}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message, reset }),
-        });
-
-        const data = await response.json();
-
-        chatBox.lastChild.remove();
-
-        addMessage(data.reply, "ai");
-      } catch (error) {
-        chatBox.lastChild.remove();
-        addMessage("Error: Could not connect to the server", "ai");
-      }
-    }
-
-    sendBtn.addEventListener("click", () => sendMessage());
-    resetBtn.addEventListener("click", () => sendMessage(true));
-
-    messageBox.addEventListener("keypress", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
-  </script>
 </body>
 </html>

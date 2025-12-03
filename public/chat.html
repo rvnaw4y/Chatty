@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chatty</title>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>Chatty</h2>
+      </div>
+      
+      <div class="model-selector">
+        <select id="modelSelect">
+          <option value="model1">Nvidia Nano 12B</option>
+          <option value="deepseek">Deepseek</option>
+          <option value="grok">Grok</option>
+
+        </select>
+        <button id="modelSelect">More features soon!</button>
+      </div>
+
+      <div class="chat-history">
+        <!-- Chat history would go here -->
+      </div>
+
+      <div class="sidebar-footer">
+        <button id="resetBtn">Reset Memory</button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="chat-header">
+        <div class="chat-title">New Chat</div>
+      </div>
+
+      <div id="chat-box">
+        <div class="empty-state">
+          <h3>How can I help you today?</h3>
+          <p>Start a conversation by typing a message below</p>
+        </div>
+      </div>
+
+      <div class="input-container">
+        <div class="input-wrapper">
+          <textarea id="messageBox" placeholder="Message..." rows="1"></textarea>
+          <button id="sendBtn">Send</button>
+        </div>
+      </div>
+
+      <div class="footer-note">
+        Note: This app is using an <a href="https://openrouter.ai/">openrouter</a> ai i just gave them a prompt on how to act and what their job is.
+      </div>
+    </div>
+  </div>
+
+<script>
+const chatBox = document.getElementById("chat-box");
+const messageBox = document.getElementById("messageBox");
+const modelSelect = document.getElementById("modelSelect");
+const sendBtn = document.getElementById("sendBtn");
+const resetBtn = document.getElementById("resetBtn");
+const emptyState = document.querySelector(".empty-state");
+
+// Auto-resize textarea
+messageBox.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+});
+
+// Escape HTML to prevent injection
+function escapeHTML(text) {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// Convert Markdown to HTML (bold, inline code, code blocks, line breaks)
+function markdownToHTML(text) {
+  // --- Auto-detect multi-line single backticks ---
+  text = text.replace(/`([\s\S]*?)`/g, (match, code) => {
+    if (code.includes("\n")) {
+      return "```\n" + code + "\n```";
+    }
+    return match; // leave inline code
+  });
+
+  // --- Convert triple-backtick code blocks ---
+  text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+    return `<pre class="code-block ${lang || ''}"><code>${escapeHTML(code)}</code></pre>`;
+  });
+
+  // --- Convert inline code ---
+  text = text.replace(/`(.*?)`/g, (match, code) => {
+    return `<code class="inline-code">${escapeHTML(code)}</code>`;
+  });
+
+  // --- Convert bold ---
+  text = text.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+
+  // --- Convert line breaks ---
+  return text.replace(/\n/g, "<br>");
+}
+
+// Add a message to the chat
+function addMessage(content, sender) {
+  if (emptyState) emptyState.remove();
+
+  const messageDiv = document.createElement("div");
+  messageDiv.classList.add("message", sender);
+
+  const avatar = document.createElement("div");
+  avatar.classList.add("message-avatar");
+  avatar.textContent = sender === "user" ? "U" : "AI";
+
+  const messageContent = document.createElement("div");
+  messageContent.classList.add("message-content");
+
+  // Convert Markdown to HTML
+  messageContent.innerHTML = markdownToHTML(content);
+
+  messageDiv.appendChild(avatar);
+  messageDiv.appendChild(messageContent);
+
+  chatBox.appendChild(messageDiv);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// Send message to server
+async function sendMessage(reset = false) {
+  const message = messageBox.value.trim();
+  const model = modelSelect.value;
+  if (!message && !reset) return;
+
+  if (!reset) addMessage(message, "user");
+  messageBox.value = "";
+  messageBox.style.height = 'auto';
+
+  addMessage(reset ? "🔄 Resetting memory..." : "🤖 Thinking...", "ai");
+
+  try {
+    const response = await fetch(`/api/chat/${model}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, reset }),
+    });
+
+    const data = await response.json();
+
+    // Remove the "Thinking..." message
+    chatBox.lastChild.remove();
+
+    addMessage(data.reply, "ai");
+  } catch (error) {
+    chatBox.lastChild.remove();
+    addMessage("Error: Could not connect to the server", "ai");
+  }
+}
+
+// Event listeners
+sendBtn.addEventListener("click", () => sendMessage());
+resetBtn.addEventListener("click", () => sendMessage(true));
+
+messageBox.addEventListener("keypress", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+</script>
+
+
+</body>
+</html>
