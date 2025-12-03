@@ -8,6 +8,7 @@
     "dev": "nodemon"
   },
   "dependencies": {
+    "badge-maker": "^5.0.2",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.1",
     "connect-sqlite3": "^0.9.16",
