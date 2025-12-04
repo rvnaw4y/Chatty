@@ -23,7 +23,4 @@ purposes.
 
 Redistribution, sublicensing, or commercial use of this software, whether modified 
 or unmodified, is strictly prohibited. You may not claim ownership of the original 
-software, nor remove or alter the author's attribution.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
-```
+software, nor remove or alter the author's attribut

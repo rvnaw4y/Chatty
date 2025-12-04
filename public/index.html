@@ -1,151 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chatty</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: "Inter", sans-serif;
-      background: #1b1d21;
-      color: white;
-      overflow-x: hidden;
-    }
-
-    /* Full Navbar */
-    .navbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px 100px;
-      background: #111;
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-    }
-    .navbar .logo {
-      font-size: 24px;
-      font-weight: bold;
-      color: white;
-      text-decoration: none;
-    }
-    .navbar .nav-links {
-      display: flex;
-      gap: 25px;
-    }
-    .navbar .nav-links a {
-      color: #ccc;
-      text-decoration: none;
-      transition: 0.2s;
-      font-size: 16px;
-    }
-    .navbar .nav-links a:hover {
-      color: white;
-    }
-
-    /* Hero Section */
-    .hero {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 130px 100px;
-      flex-wrap: wrap;
-    }
-
-    .hero-text {
-      max-width: 500px;
-      margin-top: 80px;
-    }
-    .hero-text h1 {
-      font-size: 48px;
-      margin: 0;
-    }
-    .hero-text p {
-      font-size: 28px;
-      margin: 10px 0 30px;
-      color: #d4d4d4;
-    }
-    .hero-text small {
-      font-size: 13px;
-      color: #b8b8b8;
-    }
-
-    /* Laptop Image */
-    .laptop {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .laptop img {
-      width: 600px;
-      max-width: 100%;
-      display: block;
-      margin-bottom: 20px;
-    }
-    .laptop .caption {
-      font-size: 26px;
-      color: #e3e3e3;
-      text-align: center;
-    }
-
-    /* Button Example */
-    .hero-text button {
-      padding: 12px 25px;
-      background-color: #4caf50;
-      border: none;
-      border-radius: 6px;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-      margin-top: 20px;
-      transition: 0.2s;
-    }
-    .hero-text button:hover {
-      background-color: #45a049;
-    }
-
-    @media (max-width: 900px) {
-      .hero {
-        flex-direction: column;
-        text-align: center;
-        padding: 100px 20px;
-      }
-      .hero-text {
-        margin-top: 0;
-      }
-      .laptop .caption {
-        margin-top: 10px;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatty - Your free Multi AI Tool</title>
+    <!-- Load Tailwind CSS from CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121212; /* Very dark background */
+        }
+        /* Removed custom laptop CSS */
+    </style>
 </head>
-<body>
+<body class="min-h-screen text-white flex flex-col">
 
-  <!-- Full Navbar -->
-  <div class="navbar">
-    <a href="#" class="logo">Chatty</a>
-    <div class="nav-links">
-      <a href="#">Home</a>
-      <a href="login">LogIn</a>
-      <a href="signup">SignUp</a>
-    </div>
-  </div>
+    <!-- Header Navigation -->
+    <header class="p-6 md:p-8 flex justify-between items-center sticky top-0 z-10 bg-[#121212]">
+        <h1 class="text-3xl font-bold tracking-tight mx-auto md:mx-0">Chatty</h1>
+        <nav class="hidden md:flex space-x-4 ml-auto">
+            <a href="#" class="px-4 py-2 text-sm font-medium hover:text-gray-300 transition duration-150">Log In</a>
+            <a href="#" class="px-4 py-2 text-sm font-medium bg-gray-700 rounded-lg hover:bg-gray-600 transition duration-150">Sign Up</a>
+        </nav>
+    </header>
 
-  <!-- Main Hero Section -->
-  <section class="hero">
-    <div class="hero-text">
-      <h1>Chatty</h1>
-      <p>Your free Multi AI Tool.</p>
-      <small>Chatty was made to talk with AI models for free and forever! It is based on the OpenRouter API.</small>
-      <button>Get Started</button>
-    </div>
+    <!-- Main Content Grid -->
+    <main class="flex-grow relative grid md:grid-cols-2 gap-10 lg:gap-20 p-6 md:p-12 lg:p-20 min-h-[calc(100vh-100px)] items-center">
 
-    <div class="laptop">
-      <img src="img/Untitled design.png" alt="Laptop preview">
-      <div class="caption">By developers for developers!</div>
-    </div>
-  </section>
+        <!-- Left Promotional Text -->
+        <div class="space-y-6 order-2 md:order-1 max-w-lg">
+            <h2 class="text-5xl lg:text-7xl font-extrabold leading-tight">
+                Chatty<br>
+                <span class="font-light">Your free Multi AI Tool.</span>
+            </h2>
+            <p class="text-lg text-gray-400 max-w-md">
+                Chatty was made to talk with ai models for free and for ever it. is based on the openrouter API.
+            </p>
+        </div>
+
+        <!-- Right Image and Tagline Container -->
+        <div class="order-1 md:order-2 flex flex-col items-center space-y-8">
+            <!-- Image -->
+            <img 
+                src="img/Untitled design.png"
+                alt="A visual demonstration of the Chatty AI tool interface" 
+                class="w-full max-w-xl h-auto rounded-xl shadow-2xl transition-transform duration-500 hover:scale-[1.01]"
+            >
+            <!-- Tagline positioned directly below the image and centered -->
+            <p class="text-xl md:text-2xl font-semibold text-white max-w-xl text-center">
+                By developers for developers!
+            </p>
+        </div>
+    </main>
+
+    <!-- Project Footer -->
+    <footer class="mt-12 p-8 md:p-12 border-t border-gray-800 bg-[#151515]">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <!-- Column 1: Mission/Description -->
+            <div>
+                <h3 class="text-xl font-bold mb-3">Chatty AI Tool</h3>
+                <p class="text-sm text-gray-400 max-w-xs">
+                    Chatty is an open-source, multi-AI conversational tool built by developers, for developers, leveraging the power of the openrouter API for free.
+                </p>
+            </div>
+
+            <!-- Column 2: Links -->
+            <div>
+                <h3 class="text-xl font-bold mb-3">Resources</h3>
+                <ul class="space-y-2 text-sm">
+                    <li>
+                        <a href="https://github.com/rvnaw4y/Chatty" target="_blank" class="text-gray-400 hover:text-blue-400 transition duration-150">
+                            GitHub Repository
+                        </a>
+                    </li>
+                    <li><a href="#" class="text-gray-400 hover:text-blue-400 transition duration-150">Documentation (Coming Soon)</a></li>
+                    <li><a href="https://openrouter.ai/" class="text-gray-400 hover:text-blue-400 transition duration-150">OpenRouter API</a></li>
+                </ul>
+            </div>
+
+            <!-- Column 3: Legal / Contact Placeholder -->
+            <div>
+                <h3 class="text-xl font-bold mb-3">Legal</h3>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="#" class="text-gray-400 hover:text-blue-400 transition duration-150">Terms of Service</a></li>
+                    <li><a href="#" class="text-gray-400 hover:text-blue-400 transition duration-150">Privacy Policy</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Copyright / Bottom Text -->
+        <div class="mt-8 pt-4 border-t border-gray-700 text-center">
+            <p class="text-xs text-gray-500">
+                &copy; 2024 Chatty. All rights reserved. Open-Source Project.
+            </p>
+        </div>
+    </footer>
 
 </body>
 </html>

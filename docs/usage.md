@@ -7,5 +7,3 @@ Start the app:
 ```bash
 node index.js
 ```
-
-You can now use Chatty as intended.
