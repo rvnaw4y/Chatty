@@ -1,3 +1,5 @@
 node_modules/
 .env
 users.db
+css.txt
+demo.html
