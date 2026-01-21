@@ -168,7 +168,7 @@ serverApp.post("/api/chat/grok", async (req, res) => {
         chatMemory.grok.push({ role: "user", content: message });
 
         const completion = await openai.chat.completions.create({
-            model: "x-ai/grok-4.1-fast:free",
+            model: "x-ai/grok-code-fast-1",
             messages: chatMemory.grok,
         });
 
@@ -199,7 +199,10 @@ serverApp.post("/api/chat/model1", async (req, res) => {
             messages: chatMemory.model1,
         });
 
-        const reply = completion.choices[0].message.content;
+        const reply =
+            completion?.choices?.[0]?.message?.content ||
+            "AI did not return a response.";
+
         chatMemory.model1.push({ role: "assistant", content: reply });
 
         res.json({ reply });
