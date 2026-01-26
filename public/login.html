@@ -1,26 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatty - Log In</title>
-    <link rel="stylesheet" href="css/auth.css">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Chatty - Log In</title>
+        <link rel="stylesheet" href="css/auth.css">
+        <meta name="color-scheme" content="dark">
 </head>
 <body>
 
-    <div class="container">
-        <h1>Chatty - Log In</h1>
+    <div class="split">
+        <aside class="left-panel">
+            <div class="left-content">
+                <h1 class="brand">Chatty</h1>
+                <p class="tag">For developers, By developers.</p>
+            </div>
+        </aside>
 
-        <form action="/login" method="POST" class="form-box">
-            <label>Username</label>
-            <input type="text" name="username" placeholder="Username" required>
+        <main class="right-panel">
+            <div class="auth-card">
+                <h2>Welcome back</h2>
+                <p class="muted">Sign in to continue to Chatty</p>
 
-            <label>Password</label>
-            <input type="password" name="password" placeholder="Password" required>
+                <form action="/login" method="POST" class="form-box">
+                    <label>Username</label>
+                    <input type="text" name="username" placeholder="Username" required>
 
-            <button type="submit">Sign Up</button>
-            <p>Dont have an account? <a href="/signup">Sign Up</a> Today!</p>
-        </form>
+                    <label>Password</label>
+                    <input type="password" name="password" placeholder="Password" required>
+
+                    <button type="submit">Log In</button>
+                </form>
+
+                <p class="signup">Don't have an account? <a href="/signup">Sign Up</a></p>
+            </div>
+        </main>
     </div>
 
 </body>

@@ -12,30 +12,39 @@
     <div class="sidebar">
       <div class="sidebar-header">
         <h2>Chatty</h2>
+        <button id="newChatBtn" class="new-chat-btn" title="New Chat">+</button>
       </div>
       
       <div class="model-selector">
         <select id="modelSelect">
           <option value="deepseek">Deepseek</option>
           <option value="grok">Grok</option>
-
         </select>
-        <button id="modelSelect">More features soon!</button>
       </div>
 
-      <div class="chat-history">
-        <!-- Chat history would go here -->
+      <div class="chat-history-section">
+        <div class="history-label">Recent Chats</div>
+        <div class="chat-history" id="chatHistory">
+          <!-- Chat history will be loaded here -->
+        </div>
       </div>
 
       <div class="sidebar-footer">
-        <button id="resetBtn">Reset Memory</button>
+        <button id="resetBtn" class="footer-btn">🔄 Clear Memory</button>
+        <button id="settingsBtn" class="footer-btn">⚙️ Settings</button>
+        <button id="logoutBtn" class="footer-btn">🚪 Logout</button>
       </div>
     </div>
 
     <!-- Main Content -->
     <div class="main-content">
       <div class="chat-header">
-        <div class="chat-title">New Chat</div>
+        <div class="chat-title" id="chatTitle">New Chat</div>
+        <div class="chat-header-actions">
+          <button id="saveBtn" class="header-btn" title="Save Chat">💾</button>
+          <button id="shareBtn" class="header-btn" title="Share">📤</button>
+          <button id="renameBtn" class="header-btn" title="Rename">✏️</button>
+        </div>
       </div>
 
       <div id="chat-box">
@@ -48,12 +57,27 @@
       <div class="input-container">
         <div class="input-wrapper">
           <textarea id="messageBox" placeholder="Message..." rows="1"></textarea>
-          <button id="sendBtn">Send</button>
+          <button id="sendBtn" class="send-btn">Send</button>
         </div>
       </div>
 
       <div class="footer-note">
-        Note: This app is using an <a href="https://openrouter.ai/">openrouter</a> ai i just gave them a prompt on how to act and what their job is.
+        Powered by <a href="https://openrouter.ai/">OpenRouter</a> • Your chats are saved automatically
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for renaming chat -->
+  <div id="renameModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Rename Chat</h3>
+        <button id="closeRenameModal" class="close-btn">×</button>
+      </div>
+      <input type="text" id="renameInput" placeholder="Enter new chat name..." />
+      <div class="modal-actions">
+        <button id="cancelRenameBtn" class="modal-btn cancel">Cancel</button>
+        <button id="confirmRenameBtn" class="modal-btn confirm">Save</button>
       </div>
     </div>
   </div>
@@ -64,7 +88,27 @@ const messageBox = document.getElementById("messageBox");
 const modelSelect = document.getElementById("modelSelect");
 const sendBtn = document.getElementById("sendBtn");
 const resetBtn = document.getElementById("resetBtn");
+const newChatBtn = document.getElementById("newChatBtn");
+const saveBtn = document.getElementById("saveBtn");
+const renameBtn = document.getElementById("renameBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const chatHistory = document.getElementById("chatHistory");
+const chatTitle = document.getElementById("chatTitle");
 const emptyState = document.querySelector(".empty-state");
+const renameModal = document.getElementById("renameModal");
+const renameInput = document.getElementById("renameInput");
+const confirmRenameBtn = document.getElementById("confirmRenameBtn");
+const closeRenameModal = document.getElementById("closeRenameModal");
+const cancelRenameBtn = document.getElementById("cancelRenameBtn");
+
+// State management
+let currentChatId = null;
+let currentMessages = [];
+let chatMessages = {
+    deepseek: [],
+    grok: [],
+    model1: [],
+};
 
 // Auto-resize textarea
 messageBox.addEventListener('input', function() {
@@ -80,7 +124,7 @@ function escapeHTML(text) {
     .replace(/>/g, "&gt;");
 }
 
-// Convert Markdown to HTML (bold, inline code, code blocks, line breaks)
+// Convert Markdown to HTML (bold, italic, strikethrough, code blocks, links, lists, etc)
 function markdownToHTML(text) {
   // --- Auto-detect multi-line single backticks ---
   text = text.replace(/`([\s\S]*?)`/g, (match, code) => {
@@ -95,16 +139,48 @@ function markdownToHTML(text) {
     return `<pre class="code-block ${lang || ''}"><code>${escapeHTML(code)}</code></pre>`;
   });
 
-  // --- Convert inline code ---
-  text = text.replace(/`(.*?)`/g, (match, code) => {
+  // --- Convert inline code (before other formatting) ---
+  text = text.replace(/`([^`\n]+)`/g, (match, code) => {
     return `<code class="inline-code">${escapeHTML(code)}</code>`;
   });
 
-  // --- Convert bold ---
-  text = text.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+  // --- Convert links ---
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, title, url) => {
+    return `<a href="${escapeHTML(url)}" target="_blank" class="markdown-link">${escapeHTML(title)}</a>`;
+  });
+
+  // --- Convert bold italic ***text*** or ___text___ ---
+  text = text.replace(/\*\*\*([^\*]+)\*\*\*/g, "<b><i>$1</i></b>");
+  text = text.replace(/___([^_]+)___/g, "<b><i>$1</i></b>");
+
+  // --- Convert bold **text** or __text__ ---
+  text = text.replace(/\*\*([^\*]+)\*\*/g, "<b>$1</b>");
+  text = text.replace(/__([^_]+)__/g, "<b>$1</b>");
+
+  // --- Convert italic *text* or _text_ ---
+  text = text.replace(/\*([^\*]+)\*/g, "<i>$1</i>");
+  text = text.replace(/_([^_]+)_/g, "<i>$1</i>");
+
+  // --- Convert strikethrough ~~text~~ ---
+  text = text.replace(/~~([^~]+)~~/g, "<del>$1</del>");
+
+  // --- Convert unordered lists (-, *, +) ---
+  text = text.replace(/(?:^|\n)([\s]*)[-*+]\s+(.+?)(?=\n|$)/gm, (match, indent, item) => {
+    return `<li class="markdown-list-item">${item}</li>`;
+  });
+  text = text.replace(/(<li class="markdown-list-item">.*?<\/li>)/s, (match) => {
+    return `<ul class="markdown-list">${match}</ul>`;
+  });
+
+  // --- Convert numbered lists ---
+  text = text.replace(/(?:^|\n)(\d+)\.\s+(.+?)(?=\n|$)/gm, (match, num, item) => {
+    return `<li class="markdown-list-item">${item}</li>`;
+  });
 
   // --- Convert line breaks ---
-  return text.replace(/\n/g, "<br>");
+  text = text.replace(/\n/g, "<br>");
+
+  return text;
 }
 
 // Add a message to the chat
@@ -129,6 +205,123 @@ function addMessage(content, sender) {
 
   chatBox.appendChild(messageDiv);
   chatBox.scrollTop = chatBox.scrollHeight;
+
+  // Store message in current messages
+  currentMessages.push({ role: sender === "user" ? "user" : "assistant", content });
+}
+
+// Load chats from server
+async function loadChatHistory() {
+  try {
+    const response = await fetch("/api/chats");
+    const chats = await response.json();
+    
+    chatHistory.innerHTML = "";
+    if (chats.length === 0) {
+      chatHistory.innerHTML = '<div class="no-chats">No chats yet</div>';
+      return;
+    }
+
+    chats.forEach(chat => {
+      const chatItem = document.createElement("div");
+      chatItem.classList.add("chat-item");
+      chatItem.innerHTML = `
+        <div class="chat-item-title">${escapeHTML(chat.title || "Untitled")}</div>
+        <div class="chat-item-meta">${chat.model} • ${new Date(chat.updated_at).toLocaleDateString()}</div>
+        <div class="chat-item-actions">
+          <button class="action-btn" title="Load" onclick="loadChat(${chat.id})">📂</button>
+          <button class="action-btn delete" title="Delete" onclick="deleteChat(${chat.id})">🗑️</button>
+        </div>
+      `;
+      chatHistory.appendChild(chatItem);
+    });
+  } catch (err) {
+    console.error("Error loading chats:", err);
+  }
+}
+
+// Load specific chat
+async function loadChat(chatId) {
+  try {
+    const response = await fetch(`/api/chat/${chatId}`);
+    const chat = await response.json();
+    
+    currentChatId = chatId;
+    currentMessages = chat.messages;
+    
+    // Clear and reload chat
+    chatBox.innerHTML = "";
+    chat.messages.forEach(msg => {
+      addMessage(msg.content, msg.role === "user" ? "user" : "ai");
+    });
+
+    chatTitle.textContent = chat.title || "Chat";
+    modelSelect.value = chat.model;
+    
+    // Update chat memory for model
+    chatMessages[chat.model] = chat.messages;
+  } catch (err) {
+    console.error("Error loading chat:", err);
+    addMessage("Error loading chat", "ai");
+  }
+}
+
+// Save chat
+async function saveChat() {
+  if (currentMessages.length === 0) return;
+
+  const title = chatTitle.textContent === "New Chat" 
+    ? (currentMessages[0]?.content || "Untitled").substring(0, 50)
+    : chatTitle.textContent;
+  const model = modelSelect.value;
+
+  try {
+    let endpoint = "/api/save-chat";
+    let method = "POST";
+    let body = { title, model, messages: currentMessages };
+
+    if (currentChatId) {
+      endpoint = `/api/chat/${currentChatId}`;
+      method = "PUT";
+    }
+
+    const response = await fetch(endpoint, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+    if (data.id) currentChatId = data.id;
+    
+    chatTitle.textContent = title;
+    loadChatHistory();
+  } catch (err) {
+    console.error("Error saving chat:", err);
+  }
+}
+
+// Delete chat
+async function deleteChat(chatId) {
+  if (!confirm("Are you sure you want to delete this chat?")) return;
+
+  try {
+    await fetch(`/api/chat/${chatId}`, { method: "DELETE" });
+    if (currentChatId === chatId) newChatSession();
+    loadChatHistory();
+  } catch (err) {
+    console.error("Error deleting chat:", err);
+  }
+}
+
+// New chat session
+function newChatSession() {
+  currentChatId = null;
+  currentMessages = [];
+  chatBox.innerHTML = '<div class="empty-state"><h3>How can I help you today?</h3><p>Start a conversation by typing a message below</p></div>';
+  chatTitle.textContent = "New Chat";
+  const model = modelSelect.value;
+  chatMessages[model] = [];
 }
 
 // Send message to server
@@ -141,7 +334,7 @@ async function sendMessage(reset = false) {
   messageBox.value = "";
   messageBox.style.height = 'auto';
 
-  addMessage(reset ? "🔄 Resetting memory..." : "🤖 Thinking...", "ai");
+  addMessage(reset ? "🔄 Clearing memory..." : "🤖 Thinking...", "ai");
 
   try {
     const response = await fetch(`/api/chat/${model}`, {
@@ -156,6 +349,11 @@ async function sendMessage(reset = false) {
     chatBox.lastChild.remove();
 
     addMessage(data.reply, "ai");
+    
+    // Auto-save after each message
+    if (!reset) {
+      setTimeout(saveChat, 1000);
+    }
   } catch (error) {
     chatBox.lastChild.remove();
     addMessage("Error: Could not connect to the server", "ai");
@@ -164,7 +362,44 @@ async function sendMessage(reset = false) {
 
 // Event listeners
 sendBtn.addEventListener("click", () => sendMessage());
-resetBtn.addEventListener("click", () => sendMessage(true));
+resetBtn.addEventListener("click", () => {
+  sendMessage(true);
+  newChatSession();
+});
+newChatBtn.addEventListener("click", newChatSession);
+saveBtn.addEventListener("click", saveChat);
+
+// Rename chat
+renameBtn.addEventListener("click", () => {
+  renameInput.value = chatTitle.textContent;
+  renameModal.classList.remove("hidden");
+  renameInput.focus();
+});
+
+confirmRenameBtn.addEventListener("click", async () => {
+  const newTitle = renameInput.value.trim();
+  if (newTitle && currentChatId) {
+    chatTitle.textContent = newTitle;
+    currentMessages[0] = { ...currentMessages[0] };
+    await saveChat();
+  }
+  renameModal.classList.add("hidden");
+});
+
+closeRenameModal.addEventListener("click", () => {
+  renameModal.classList.add("hidden");
+});
+
+cancelRenameBtn.addEventListener("click", () => {
+  renameModal.classList.add("hidden");
+});
+
+// Logout
+logoutBtn.addEventListener("click", () => {
+  if (confirm("Are you sure you want to logout?")) {
+    window.location.href = "/login.html";
+  }
+});
 
 messageBox.addEventListener("keypress", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
@@ -172,8 +407,10 @@ messageBox.addEventListener("keypress", (e) => {
     sendMessage();
   }
 });
-</script>
 
+// Load chat history on page load
+loadChatHistory();
+</script>
 
 </body>
 </html>

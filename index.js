@@ -58,6 +58,19 @@ db.run(`
     )
 `);
 
+db.run(`
+    CREATE TABLE IF NOT EXISTS chat_conversations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        title TEXT,
+        model TEXT,
+        messages TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+`);
+
 // ----------------------
 // ROUTES
 // ----------------------
@@ -210,6 +223,102 @@ serverApp.post("/api/chat/model1", async (req, res) => {
         console.error("API Error:", err);
         res.status(500).json({ reply: "Error contacting AI :(" });
     }
+});
+
+// ----------------------
+// CHAT HISTORY ROUTES
+// ----------------------
+
+// Save chat conversation
+serverApp.post("/api/save-chat", requireLogin, (req, res) => {
+    const { title, model, messages } = req.body;
+    const userId = req.session.user.id;
+
+    db.run(
+        `INSERT INTO chat_conversations (user_id, title, model, messages) VALUES (?, ?, ?, ?)`,
+        [userId, title, model, JSON.stringify(messages)],
+        function (err) {
+            if (err) {
+                console.error("Save error:", err);
+                return res.status(500).json({ error: "Could not save chat" });
+            }
+            res.json({ id: this.lastID, message: "Chat saved!" });
+        }
+    );
+});
+
+// Update chat conversation
+serverApp.put("/api/chat/:chatId", requireLogin, (req, res) => {
+    const { chatId } = req.params;
+    const { title, messages } = req.body;
+    const userId = req.session.user.id;
+
+    db.run(
+        `UPDATE chat_conversations SET title = ?, messages = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?`,
+        [title, JSON.stringify(messages), chatId, userId],
+        function (err) {
+            if (err) {
+                console.error("Update error:", err);
+                return res.status(500).json({ error: "Could not update chat" });
+            }
+            res.json({ message: "Chat updated!" });
+        }
+    );
+});
+
+// Get all chats for user
+serverApp.get("/api/chats", requireLogin, (req, res) => {
+    const userId = req.session.user.id;
+
+    db.all(
+        `SELECT id, title, model, created_at, updated_at FROM chat_conversations WHERE user_id = ? ORDER BY updated_at DESC`,
+        [userId],
+        (err, rows) => {
+            if (err) {
+                console.error("Fetch error:", err);
+                return res.status(500).json({ error: "Could not fetch chats" });
+            }
+            res.json(rows || []);
+        }
+    );
+});
+
+// Get specific chat with messages
+serverApp.get("/api/chat/:chatId", requireLogin, (req, res) => {
+    const { chatId } = req.params;
+    const userId = req.session.user.id;
+
+    db.get(
+        `SELECT * FROM chat_conversations WHERE id = ? AND user_id = ?`,
+        [chatId, userId],
+        (err, row) => {
+            if (err || !row) {
+                return res.status(404).json({ error: "Chat not found" });
+            }
+            res.json({
+                ...row,
+                messages: JSON.parse(row.messages)
+            });
+        }
+    );
+});
+
+// Delete chat
+serverApp.delete("/api/chat/:chatId", requireLogin, (req, res) => {
+    const { chatId } = req.params;
+    const userId = req.session.user.id;
+
+    db.run(
+        `DELETE FROM chat_conversations WHERE id = ? AND user_id = ?`,
+        [chatId, userId],
+        function (err) {
+            if (err) {
+                console.error("Delete error:", err);
+                return res.status(500).json({ error: "Could not delete chat" });
+            }
+            res.json({ message: "Chat deleted!" });
+        }
+    );
 });
 
 // ----------------------
